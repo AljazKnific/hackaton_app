@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice & Writing Style v2 — Navigator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e8e8e8; min-height: 100vh; }
+  .header { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+  .header .meta { font-size: 12px; color: #666; margin-top: 3px; }
+  .badge { background: #e11d48; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 65px); }
+  .sidebar { background: #141414; border-right: 1px solid #222; padding: 16px 0; }
+  .sidebar-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; font-size: 13px; color: #aaa; }
+  .nav-item:hover { background: #1d1d1d; color: #fff; }
+  .nav-item.active { background: #1c0a0f; border-left-color: #e11d48; color: #fb7185; }
+  .nav-item .num { font-size: 11px; font-weight: 700; color: #555; width: 20px; }
+  .nav-item.active .num { color: #e11d48; }
+  .main { padding: 28px 36px; overflow-y: auto; }
+  .card { background: #1a1a1a; border: 1px solid #252525; border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .card .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 9px 12px; border-bottom: 1px solid #2a2a2a; color: #666; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1d1d1d; color: #ccc; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1d1d1d; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill-green { background: #05603a20; color: #34d399; }
+  .pill-red { background: #7f1d1d20; color: #f87171; }
+  .pill-yellow { background: #78350f20; color: #fbbf24; }
+  .pill-blue { background: #1d4ed820; color: #60a5fa; }
+  .pill-rose { background: #e11d4820; color: #fb7185; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; }
+  .stat-card .slabel { font-size: 11px; color: #555; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-card .svalue { font-size: 22px; font-weight: 700; color: #fff; }
+  .stat-card .ssub { font-size: 12px; color: #666; margin-top: 2px; }
+  .mode-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .mode-card .mname { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .mode-card .mpct { font-size: 28px; font-weight: 800; }
+  .mode-card .mwhen { font-size: 12px; color: #666; margin-top: 6px; }
+  .mode-card .mex { font-family: 'Menlo','Monaco',monospace; font-size: 12px; color: #d1d5db; background: #0d1117; padding: 8px 12px; border-radius: 6px; margin-top: 8px; line-height: 1.5; }
+  .data-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin: 8px 0; }
+  .data-cell { text-align: center; background: #1a1a1a; border-radius: 4px; padding: 6px; }
+  .data-cell .dv { font-size: 13px; font-weight: 700; color: #fff; }
+  .data-cell .dl { font-size: 9px; color: #555; text-transform: uppercase; margin-top: 1px; }
+  .pattern-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .pattern-card .pnum { font-size: 11px; font-weight: 700; color: #e11d48; margin-bottom: 4px; }
+  .pattern-card .pformula { font-size: 13px; font-weight: 700; color: #fb7185; margin-bottom: 8px; }
+  .pattern-card .pex { font-family: 'Menlo','Monaco',monospace; font-size: 12px; color: #d1d5db; background: #0d1117; padding: 10px 14px; border-radius: 6px; white-space: pre-wrap; line-height: 1.6; margin-bottom: 6px; }
+  .pattern-card .pwhy { font-size: 12px; color: #888; }
+  .rule-row { padding: 10px 0; border-bottom: 1px solid #1d1d1d; display: flex; gap: 12px; align-items: flex-start; font-size: 13px; }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-check { color: #34d399; font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+  .rule-x { color: #f87171; font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+  .rule-warn { color: #fbbf24; font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+  .phrase-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .phrase-card .pcmode { font-size: 12px; font-weight: 700; color: #fb7185; margin-bottom: 8px; }
+  .phrase-card .pcitem { font-family: 'Menlo','Monaco',monospace; font-size: 12px; color: #d1d5db; background: #0d1117; padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; }
+  .phrase-card .pcnote { font-size: 12px; color: #666; margin-top: 8px; }
+  code { background: #1d1d1d; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #fb7185; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Voice & Writing Style v2 — Navigator</h1>
+    <div class="meta">3,777 tweets · 19 accounts · v3.0 · Apr 2026 · Voice.docx + Performance Data</div>
+  </div>
+  <span class="badge">Voice SOP</span>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section">Foundation</div>
+    <div class="nav-item active" onclick="show('voice')"><span class="num">01</span> Personality Spectrum</div>
+    <div class="nav-item" onclick="show('awareness')"><span class="num">02</span> Awareness Stages</div>
+    <div class="nav-item" onclick="show('topics')"><span class="num">03</span> Topic Clusters</div>
+    <div class="sidebar-section" style="margin-top:8px">Language</div>
+    <div class="nav-item" onclick="show('language')"><span class="num">04</span> Language Style Data</div>
+    <div class="nav-item" onclick="show('words')"><span class="num">05</span> Word Choice</div>
+    <div class="nav-item" onclick="show('confidence')"><span class="num">06</span> Confidence & Authenticity</div>
+    <div class="sidebar-section" style="margin-top:8px">Execution</div>
+    <div class="nav-item" onclick="show('structure')"><span class="num">07</span> Structural Voice</div>
+    <div class="nav-item" onclick="show('patterns')"><span class="num">08</span> 5 Viral Patterns</div>
+    <div class="nav-item" onclick="show('rules')"><span class="num">09</span> Optimization Rules</div>
+    <div class="nav-item" onclick="show('signature')"><span class="num">10</span> Rofi Voice Signature</div>
+  </nav>
+  <main class="main">
+
+    <!-- 01 PERSONALITY SPECTRUM -->
+    <div id="voice" class="section active">
+      <div class="card">
+        <h2>Personality Spectrum</h2>
+        <div class="subtitle">4 voice modes — mix these across your content to build a recognizable brand</div>
+
+        <div class="mode-card">
+          <div class="mname" style="color:#fb7185">Insider / Authority</div>
+          <div class="mpct" style="color:#e11d48">60%</div>
+          <div style="font-size: 12px; color: #666; margin-top: 4px;">8–9 posts/week</div>
+          <div class="mwhen">When: educational content, frameworks, systems · Data: ✅ 60.5% first-person in top tier vs 42.4% bottom</div>
+          <div class="mex">here's the system that actually works...
+i've helped [X] clients do this
+most people miss this completely</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mname" style="color:#fbbf24">Contrarian</div>
+          <div class="mpct" style="color:#d97706">25%</div>
+          <div style="font-size: 12px; color: #666; margin-top: 4px;">3–4 posts/week</div>
+          <div class="mwhen">When: hot takes, positioning, belief shifts · Data: ✅ Negative framing 44.6% top vs 23.7% bottom (2x)</div>
+          <div class="mex">everyone says X — they're wrong
+most people think Y but Z
+unpopular truth:</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mname" style="color:#60a5fa">Mentor</div>
+          <div class="mpct" style="color:#3b82f6">10%</div>
+          <div style="font-size: 12px; color: #666; margin-top: 4px;">1–2 posts/week</div>
+          <div class="mwhen">When: step-by-step guides, advice · Data: ✅ Second-person 68% top vs 55.3% bottom</div>
+          <div class="mex">if I started from zero...
+here's what I'd focus on
+the shift you need to make</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mname" style="color:#f87171">Rebel / Provocateur</div>
+          <div class="mpct" style="color:#dc2626">5%</div>
+          <div style="font-size: 12px; color: #666; margin-top: 4px;">0–1 posts/week</div>
+          <div class="mwhen">When: viral attempts, standing out · Data: ✅ Edge/profanity 11.4% top vs 3.3% bottom (3.5x) · WARNING: high risk</div>
+          <div class="mex">POV: stupid people made you rich
+they don't want you to know this
+raw truth:</div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">2026 Format Voice Mapping</div>
+        <table>
+          <tr><th>Format</th><th>Primary Voice Mode</th><th>Notes</th></tr>
+          <tr><td>Quote Tweet Commentary</td><td><span class="pill pill-yellow">Contrarian (25%)</span></td><td>Your take above QT. Under 200 chars. Punchy, not preachy.</td></tr>
+          <tr><td>X Article Teaser</td><td><span class="pill pill-rose">Insider Authority (60%)</span></td><td>Teaser = pure Twitter voice. Article body can have headers/lists.</td></tr>
+          <tr><td>Grok Interactive</td><td><span class="pill pill-rose">Insider Authority (60%)</span></td><td>@Grok tag at END. Casual, specific question. Not generic.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 02 AWARENESS STAGES -->
+    <div id="awareness" class="section">
+      <div class="card">
+        <h2>Awareness Stages</h2>
+        <div class="subtitle">Tweet for every stage — match content goal to where the reader is</div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="slabel">TOFU</div>
+            <div class="svalue">70%</div>
+            <div class="ssub">Unaware → Problem Aware</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">MOFU</div>
+            <div class="svalue">20%</div>
+            <div class="ssub">Solution → Product Aware</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">BOFU</div>
+            <div class="svalue">10%</div>
+            <div class="ssub">Most Aware — ready to buy</div>
+          </div>
+        </div>
+
+        <table>
+          <tr><th>Stage</th><th>Description</th><th>Content Goal</th><th>Example</th></tr>
+          <tr><td><strong>Unaware</strong></td><td>Don't know they have a problem</td><td>Spark curiosity, show opportunity</td><td>"$2B made from PDFs — and 99% still sleep on it."</td></tr>
+          <tr><td><strong>Problem Aware</strong></td><td>Feel pain but don't know solution</td><td>Define the pain sharply</td><td>"You post every day and still get 0 clients. Here's why."</td></tr>
+          <tr><td><strong>Solution Aware</strong></td><td>Know solutions exist but not which</td><td>Show why current approach fails</td><td>"Ghostwriters won't fix your growth problem — systems will."</td></tr>
+          <tr><td><strong>Product Aware</strong></td><td>Know offers exist</td><td>Position your approach as superior</td><td>"We don't grow followers. We build client pipelines."</td></tr>
+          <tr><td><strong>Most Aware</strong></td><td>Ready to buy</td><td>Push urgency and social proof</td><td>"5 clients closed in 30 days. Same system we'll build for you."</td></tr>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Positioning Goals</div>
+        <table>
+          <tr><th>Goal</th><th>Message Frame</th></tr>
+          <tr><td>Belief Shift</td><td>"You're doing it wrong — here's why."</td></tr>
+          <tr><td>Authority Signal</td><td>"I know the system — here's proof."</td></tr>
+          <tr><td>Opportunity Window</td><td>"The wave is here — get on it."</td></tr>
+          <tr><td>System > Tactics</td><td>"Random posts don't work — frameworks do."</td></tr>
+          <tr><td>Monetization Bridge</td><td>"Followers mean nothing without funnels."</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 03 TOPIC CLUSTERS -->
+    <div id="topics" class="section">
+      <div class="card">
+        <h2>Topic Clusters & Voice Mapping</h2>
+        <div class="subtitle">5 macro narratives — which voice and data elements to use per topic</div>
+        <table>
+          <tr><th>Topic Cluster</th><th>Funnel</th><th>Voice Mode</th><th>Data Elements to Include</th></tr>
+          <tr>
+            <td><strong>Opportunity / Market Shift</strong><br><small>"The next big wave isn't SaaS — it's X."</small></td>
+            <td>TOFU</td>
+            <td>Contrarian or Insider</td>
+            <td>Negative framing (44.6%) · Numbers (72%) · Time urgency (26.7%)</td>
+          </tr>
+          <tr>
+            <td><strong>Content & Growth Psychology</strong><br><small>"Attention is the currency. Emotion is the trigger."</small></td>
+            <td>TOFU-MOFU</td>
+            <td>Insider Authority</td>
+            <td>First-person (60.5%) · Ellipsis (23.9%) · Action verbs (28.2%)</td>
+          </tr>
+          <tr>
+            <td><strong>Tactics, Workflows & Systems</strong><br><small>"This 3-step process doubled conversions."</small></td>
+            <td>MOFU</td>
+            <td>Insider or Mentor</td>
+            <td>Numbers (72%) · Action verbs (28.2%) · Second-person (68%)</td>
+          </tr>
+          <tr>
+            <td><strong>Authority, Proof & Results</strong><br><small>"How we grew X from 0 → 50k followers."</small></td>
+            <td>MOFU-BOFU</td>
+            <td>Insider Authority</td>
+            <td>First-person (60.5%) · Numbers (72%) · Transformation language</td>
+          </tr>
+          <tr>
+            <td><strong>Monetization & Offer</strong><br><small>"You don't need 100k followers to close $10k/month."</small></td>
+            <td>BOFU</td>
+            <td>Insider Authority</td>
+            <td>Negative-positive flip · Absolute statements (42.2%) · No direct CTA</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 04 LANGUAGE STYLE DATA -->
+    <div id="language" class="section">
+      <div class="card">
+        <h2>Language Style Data</h2>
+        <div class="subtitle">Every rule validated against 3,777 tweets</div>
+
+        <div style="font-size: 13px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Person Usage</div>
+        <table>
+          <tr><th>Element</th><th>Bottom 25%</th><th>Top 25%</th><th>Viral</th><th>Direction</th></tr>
+          <tr><td><strong>First-person (I, my)</strong></td><td>42.4%</td><td><strong>60.5%</strong></td><td>47.6%</td><td><span class="pill pill-green">⬆️ INCREASES</span></td></tr>
+          <tr><td><strong>Second-person (you, your)</strong></td><td>55.3%</td><td><strong>68.0%</strong></td><td>61.9%</td><td><span class="pill pill-green">⬆️ HIGHEST in top</span></td></tr>
+          <tr><td><strong>Contractions (I'm, don't)</strong></td><td>26.8%</td><td><strong>43.5%</strong></td><td>42.9%</td><td><span class="pill pill-green">1.6x more</span></td></tr>
+          <tr><td><strong>Ellipsis (...)</strong></td><td>6.3%</td><td><strong>23.9%</strong></td><td>21.7%</td><td><span class="pill pill-green">4x more</span></td></tr>
+          <tr><td><strong>Parenthetical asides ()</strong></td><td>16.1%</td><td><strong>37.9%</strong></td><td>40.7%</td><td><span class="pill pill-green">2.4x more</span></td></tr>
+          <tr><td><strong>Lowercase</strong></td><td>90.4%</td><td><strong>92.7%</strong></td><td>90.5%</td><td>Universal — always lowercase</td></tr>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 13px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Sentence Length</div>
+        <table>
+          <tr><th>Tier</th><th>Words/sentence</th><th>Notes</th></tr>
+          <tr><td>Bottom 25%</td><td>17.7</td><td>Too short — choppy, unengaging</td></tr>
+          <tr><td>High-mid</td><td>28.8</td><td>✅ Sweet spot</td></tr>
+          <tr><td>Top 25%</td><td>28.0</td><td>✅ Sweet spot</td></tr>
+          <tr><td>Viral</td><td>21.8</td><td>Shorter but punchier — for viral attempts</td></tr>
+        </table>
+
+        <div style="margin-top: 20px; background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px;">
+          <div style="font-size: 13px; font-weight: 700; color: #fb7185; margin-bottom: 8px;">Best Combo</div>
+          <code style="background: #0d1117; color: #d1d5db; padding: 10px 14px; display: block; border-radius: 6px; font-size: 12px; line-height: 1.6;">i spent $5K learning this so you don't have to</code>
+          <div style="font-size: 12px; color: #666; margin-top: 8px;">First-person (authority) + second-person (relevance) — in one line</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 WORD CHOICE -->
+    <div id="words" class="section">
+      <div class="card">
+        <h2>Word Choice</h2>
+        <div class="subtitle">Specificity beats everything. Layer 2+ triggers per tweet.</div>
+        <table>
+          <tr><th>Element</th><th>Bottom</th><th>Top 25%</th><th>Multiplier</th><th>Rule</th></tr>
+          <tr>
+            <td><strong>Specific numbers</strong></td>
+            <td>44.3%</td>
+            <td><strong>72.0%</strong></td>
+            <td><span class="pill pill-green">1.6x</span></td>
+            <td>$10K MRR not "good revenue" · 200 ideas not "lots"</td>
+          </tr>
+          <tr>
+            <td><strong>Absolute terms</strong><br><small>never, always, every</small></td>
+            <td>16.2%</td>
+            <td><strong>42.2%</strong></td>
+            <td><span class="pill pill-green">2.6x</span></td>
+            <td>Make bold statements — must be defensible</td>
+          </tr>
+          <tr>
+            <td><strong>Power words</strong><br><small>insane, crazy, game-changer</small></td>
+            <td>2.7%</td>
+            <td><strong>10.5%</strong></td>
+            <td><span class="pill pill-green">3.9x</span></td>
+            <td>Use sparingly — overuse = loses impact</td>
+          </tr>
+          <tr>
+            <td><strong>Time urgency</strong><br><small>today, now, yesterday</small></td>
+            <td>9.1%</td>
+            <td><strong>26.7%</strong></td>
+            <td><span class="pill pill-green">3x</span></td>
+            <td>Ground everything in time</td>
+          </tr>
+          <tr>
+            <td><strong>Action verbs</strong><br><small>build, scale, ship, launch</small></td>
+            <td>15.8%</td>
+            <td><strong>28.2%</strong></td>
+            <td><span class="pill pill-green">1.8x</span></td>
+            <td>Lead with what you DID, not what you think</td>
+          </tr>
+          <tr>
+            <td><strong>Negative framing</strong><br><small>stop, wrong, never, mistake</small></td>
+            <td>23.7%</td>
+            <td><strong>44.6%</strong></td>
+            <td><span class="pill pill-green">1.9x</span></td>
+            <td>Call out wrong before showing right — negative captures attention faster</td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Psychological Biases — Use 2+ Per Tweet</div>
+        <table>
+          <tr><th>Bias</th><th>Example</th></tr>
+          <tr><td>FOMO</td><td>"99% are sleeping on this."</td></tr>
+          <tr><td>Greed</td><td>"$2B from info products."</td></tr>
+          <tr><td>Curiosity</td><td>"You'll thank me later."</td></tr>
+          <tr><td>Authority</td><td>"This workflow made my ads print overnight."</td></tr>
+          <tr><td>Bandwagon</td><td>"People are quietly doing this every day."</td></tr>
+          <tr><td>Social Proof</td><td>"My client went from 0 → $15k/month."</td></tr>
+          <tr><td>Fear of Loss</td><td>"Millions slip through your hands while scrolling."</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 06 CONFIDENCE & AUTHENTICITY -->
+    <div id="confidence" class="section">
+      <div class="card">
+        <h2>Confidence & Authenticity</h2>
+        <div class="subtitle">Write with conviction. Build trust without sounding fake.</div>
+        <table>
+          <tr><th>Element</th><th>Trend</th><th>Rule</th></tr>
+          <tr>
+            <td><strong>Hedging</strong><br><small>maybe, might, could, possibly</small></td>
+            <td>2.5% → 14.3% (bottoms to top)</td>
+            <td>Hedge possibilities, not your authority.<br>✅ "this might work for you" ❌ "i think maybe this could help"</td>
+          </tr>
+          <tr>
+            <td><strong>Certainty markers</strong><br><small>definitely, clearly, obviously</small></td>
+            <td>1.4% → 4.0%</td>
+            <td>Use 2–3x more than bottom tier. "this clearly shows..."</td>
+          </tr>
+          <tr>
+            <td><strong>Direct commands</strong><br><small>stop, do this, never</small></td>
+            <td>Decreases at top!</td>
+            <td>Top performers guide, don't command. "here's what works" > "do this now"</td>
+          </tr>
+          <tr>
+            <td><strong>Vulnerability</strong><br><small>honestly, real talk, tbh</small></td>
+            <td>~2% (rare)</td>
+            <td>Use occasionally. "honestly, I struggled with this for months"</td>
+          </tr>
+          <tr>
+            <td><strong>Emojis</strong></td>
+            <td>U-shaped: mid-tier uses least, viral uses most</td>
+            <td>1–2 per tweet max. Strategic, not decorative. In body, not hooks.</td>
+          </tr>
+          <tr>
+            <td><strong>Internet slang (lol, ngl)</strong></td>
+            <td>2.7% top, 0.5% viral</td>
+            <td>Sprinkle occasionally in mid-tier. Avoid in viral attempts.</td>
+          </tr>
+          <tr>
+            <td><strong>Self-deprecation</strong></td>
+            <td>0–0.3% (RARE)</td>
+            <td>Avoid. Authority > relatability. Exception: only if followed by how you overcame it.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 07 STRUCTURAL VOICE -->
+    <div id="structure" class="section">
+      <div class="card">
+        <h2>Structural Voice</h2>
+        <div class="subtitle">Cadence, rhythm, pacing — and how voice integrates with 2026 formats</div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="slabel">Cadence</div>
+            <div class="svalue" style="font-size:16px;">Hook → Insight → Punchline</div>
+            <div class="ssub">always follow this 3-part arc</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">Line breaks</div>
+            <div class="svalue">9,739</div>
+            <div class="ssub">avg eng per line break (highest)</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">Multi-line-long</div>
+            <div class="svalue">555</div>
+            <div class="ssub">avg eng — NEVER wall of text</div>
+          </div>
+        </div>
+
+        <div style="font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Replicable Formulas</div>
+        <table>
+          <tr><th>Formula</th><th>Pattern</th></tr>
+          <tr><td>Big Proof</td><td>[Big Proof] → [Context] → [Examples] → [Urgency]</td></tr>
+          <tr><td>Pain + Contrarian</td><td>[Pain] → [Contrarian Truth] → [Shortcut] → [CTA]</td></tr>
+          <tr><td>Problem + Emotion</td><td>[Problem] → [Emotion] → [Solution]</td></tr>
+          <tr><td>Scenario</td><td>[Scenario] → [Steps] → [Action]</td></tr>
+          <tr><td>Belief Shift</td><td>[Belief Shift] → [Proof] → [System Hint]</td></tr>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">2026 Format Voice Rules</div>
+        <table>
+          <tr><th>Format</th><th>Voice Rule</th></tr>
+          <tr>
+            <td><strong>Quote Tweet</strong></td>
+            <td>Your take ABOVE the QT. Under 200 chars. Contrarian mode (25%). Punchy, not preachy. Same lowercase cadence.</td>
+          </tr>
+          <tr>
+            <td><strong>X Article Teaser</strong></td>
+            <td>Teaser = pure Twitter voice (lowercase, short, 3-bullet proof). Article body = insider-authority, can have headers/lists. Same voice, slightly more structured.</td>
+          </tr>
+          <tr>
+            <td><strong>Grok Interactive</strong></td>
+            <td>@Grok tag placed LAST. Voice throughout = Insider Authority. @Grok line = casual specific question ("rate this stack out of 10", not "what do you think?")</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 08 VIRAL PATTERNS -->
+    <div id="patterns" class="section">
+      <div class="card">
+        <h2>5 Viral Patterns</h2>
+        <div class="subtitle">90% of viral tweets follow one of these — plug and play</div>
+
+        <div class="pattern-card">
+          <div class="pnum">PATTERN 1</div>
+          <div class="pformula">Big Proof → Context → Examples → Urgency</div>
+          <div class="pex">$1.8B made
+
+info products — PDFs, communities, courses
+
+99% still sleep on it
+
+the window's closing</div>
+          <div class="pwhy">Voice elements: numbers (72%) + urgency (26.7%) + absolute terms (42.2%)</div>
+        </div>
+
+        <div class="pattern-card">
+          <div class="pnum">PATTERN 2</div>
+          <div class="pformula">Pain → Contrarian Truth → Shortcut → CTA</div>
+          <div class="pex">most ghostwriters fail
+
+because they don't position
+
+they think writing is the product
+
+it's not — the transformation is
+
+here's how to fix it:</div>
+          <div class="pwhy">Voice elements: negative framing (44.6%) + contrarian positioning + second-person (68%) · Avg: 2,780 (contrarian)</div>
+        </div>
+
+        <div class="pattern-card">
+          <div class="pnum">PATTERN 3</div>
+          <div class="pformula">Problem → Emotional Insight → Tactical Tip</div>
+          <div class="pex">people scroll numb
+
+they're not looking for information
+
+they're looking to feel something
+
+give them controversy, drama, ego triggers
+
+that's how you stop the scroll</div>
+          <div class="pwhy">Voice elements: action verbs (28.2%) + negative-to-positive + power words (10.5%)</div>
+        </div>
+
+        <div class="pattern-card">
+          <div class="pnum">PATTERN 4</div>
+          <div class="pformula">Scenario → Breakdown → Reverse-Engineer → Action</div>
+          <div class="pex">if I was broke with nothing
+
+I'd find 3 winning products in my niche
+
+reverse-engineer why they work
+
+then launch something 10x better in 30 days</div>
+          <div class="pwhy">Voice elements: first-person (60.5%) + action verbs (28.2%) + specific steps</div>
+        </div>
+
+        <div class="pattern-card">
+          <div class="pnum">PATTERN 5</div>
+          <div class="pformula">Hook → Insight → Lesson → Belief Shift</div>
+          <div class="pex">going viral isn't luck
+
+it's systems
+
+systems run on data
+
+data tells you exactly what to post
+
+and systems scale predictably</div>
+          <div class="pwhy">Voice elements: negative framing first + absolute statement (42.2%) + confident assertion</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 09 OPTIMIZATION RULES -->
+    <div id="rules" class="section">
+      <div class="card">
+        <h2>Voice Optimization Rules</h2>
+        <div class="subtitle">Data-backed non-negotiables — and what to use sparingly</div>
+
+        <div style="font-size: 13px; font-weight: 700; color: #34d399; margin-bottom: 10px;">Always Do</div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Specific numbers — ✅ 72% of top tier uses them · "3 clients in 90 days" not "some clients recently"</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Write in lowercase — ✅ 92.7% of top tier · authenticity signal</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Use first-person liberally — ✅ 60.5% top vs 42.4% bottom</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Address reader directly with "you" — ✅ 68% top vs 55.3% bottom</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Include negative framing — ✅ 44.6% top vs 23.7% bottom (1.9x more)</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Use ellipsis for pacing — ✅ 23.9% top vs 6.3% bottom (4x more)</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Add parenthetical asides — ✅ 37.9% top vs 16.1% bottom (2.4x more)</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Use contractions (I'm, don't, can't) — ✅ 43.5% top vs 26.8% bottom (1.6x)</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Make absolute statements — ✅ 42.2% top vs 16.2% bottom (2.6x more)</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Ground in time frames (today, yesterday, this week) — ✅ 26.7% top vs 9.1% bottom</div></div>
+        <div class="rule-row"><span class="rule-check">✓</span><div>Lead with action verbs (build, launch, scale) — ✅ 28.2% top vs 15.8% bottom</div></div>
+
+        <div style="font-size: 13px; font-weight: 700; color: #f87171; margin: 20px 0 10px;">Never Do</div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Start with questions as opening hook — ✅ 0 in viral tier</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Use 4+ ALL-CAPS words — kills engagement</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Hedge your authority ("maybe I could possibly help") — sounds unsure</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Write walls of text — multi-line-long = 555 avg (LOWEST)</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Generic advice without specifics — vague = ignored</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Overuse exclamation points — multiple !!! = desperate energy</div></div>
+        <div class="rule-row"><span class="rule-x">✗</span><div>Self-deprecate without recovery — authority > relatability</div></div>
+
+        <div style="font-size: 13px; font-weight: 700; color: #fbbf24; margin: 20px 0 10px;">Use Sparingly</div>
+        <div class="rule-row"><span class="rule-warn">⚠</span><div>Power words (insane, wild, crazy) — sweet spot 10.5%</div></div>
+        <div class="rule-row"><span class="rule-warn">⚠</span><div>Profanity/edge — 11.4% in top tier (3.5x viral use — high risk, high reward)</div></div>
+        <div class="rule-row"><span class="rule-warn">⚠</span><div>Internet slang — 2.7% is enough</div></div>
+        <div class="rule-row"><span class="rule-warn">⚠</span><div>Emojis — 1–2 per tweet max, strategic placement</div></div>
+        <div class="rule-row"><span class="rule-warn">⚠</span><div>Direct commands — top performers guide, not command</div></div>
+      </div>
+    </div>
+
+    <!-- 10 ROFI VOICE SIGNATURE -->
+    <div id="signature" class="section">
+      <div class="card">
+        <h2>Rofi Voice Signature</h2>
+        <div class="subtitle">Your unique voice — signature phrases, principles, and implementation steps</div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="slabel">Positioning</div>
+            <div class="svalue" style="font-size:13px; line-height:1.4; padding-top:4px;">Insider who's done it + strategic thinker</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">Tone</div>
+            <div class="svalue" style="font-size:13px; line-height:1.4; padding-top:4px;">Confident not arrogant, helpful not hand-holdy</div>
+          </div>
+          <div class="stat-card">
+            <div class="slabel">Language</div>
+            <div class="svalue" style="font-size:13px; line-height:1.4; padding-top:4px;">Simple but sharp, casual but professional</div>
+          </div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">Authority Mode (60%)</div>
+          <div class="pcitem">here's the system</div>
+          <div class="pcitem">this is how it actually works</div>
+          <div class="pcitem">after helping [X] clients...</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">Contrarian Mode (25%)</div>
+          <div class="pcitem">everyone's doing X wrong</div>
+          <div class="pcitem">most people think Y but Z</div>
+          <div class="pcitem">unpopular truth:</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">Mentor Mode (10%)</div>
+          <div class="pcitem">if I started from zero...</div>
+          <div class="pcitem">here's what I'd focus on</div>
+          <div class="pcitem">the shift you need to make</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">Quote Tweet Mode</div>
+          <div class="pcitem">partially wrong. here's what's actually happening:</div>
+          <div class="pcitem">everyone's focused on [X]. nobody's talking about [Y]</div>
+          <div class="pcitem">this is the tactical play nobody's mentioning:</div>
+          <div class="pcnote">Your take ABOVE the QT. Under 200 chars. Contrarian mode primary. Punchy, not preachy.</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">X Article Mode</div>
+          <div class="pcitem">i documented everything. here's what actually worked:</div>
+          <div class="pcitem">full breakdown — [topic]. no fluff.</div>
+          <div class="pcitem">saved this for the people who actually want to build something real</div>
+          <div class="pcnote">Same lowercase/ellipsis/short lines. Article body can have headers/lists. Teaser stays pure Twitter voice.</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="pcmode">Grok Interactive Mode</div>
+          <div class="pcitem">@Grok rate this out of 10 and tell me what's missing</div>
+          <div class="pcitem">@Grok what would you add to this system?</div>
+          <div class="pcitem">@Grok score my content strategy</div>
+          <div class="pcnote">@Grok tag always LAST. Voice throughout = Insider Authority. Specific questions only — never generic "what do you think?"</div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 14px; font-weight: 700; color: #e11d48; margin-bottom: 12px;">Voice Principles</div>
+        <div class="rule-row"><span class="rule-check">1</span><div><strong>Specificity over vagueness</strong> — always include numbers</div></div>
+        <div class="rule-row"><span class="rule-check">2</span><div><strong>Action over theory</strong> — what you DID > what you think</div></div>
+        <div class="rule-row"><span class="rule-check">3</span><div><strong>Direct over flowery</strong> — say it straight</div></div>
+        <div class="rule-row"><span class="rule-check">4</span><div><strong>Proven over possible</strong> — show receipts</div></div>
+        <div class="rule-row"><span class="rule-check">5</span><div><strong>Them over you</strong> — make it about their outcome</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
