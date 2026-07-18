@@ -90,9 +90,7 @@ export function createApp(pool: Pool) {
       if (session.status !== 'collecting_info' || missing(session.extracted).length || !session.duration_preset) return res.status(409).json({ error: 'complete the product details first' });
       const result = await locked(pool, session.id, async (client) => {
         if (await moderate(session.extracted)) throw new Error('The supplied product details cannot be used for marketing copy.');
-        const template = await client.query<{ system_prompt: string }>('SELECT system_prompt FROM prompt_templates WHERE is_active = true ORDER BY version DESC LIMIT 1');
-        if (!template.rows[0]) throw new Error('no active marketing template');
-        const copy = await generateCopy(session.extracted, session.duration_preset!, template.rows[0].system_prompt);
+        const copy = await generateCopy(session.extracted, session.duration_preset!);
         await client.query(`UPDATE sessions SET marketing_text = $2, tips = $3, status = 'text_ready', updated_at = now() WHERE id = $1`, [session.id, copy.marketing_text, JSON.stringify(copy.tips)]);
         return copy;
       });

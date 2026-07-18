@@ -3,6 +3,7 @@ import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Extracted } from './db.js';
+import { knowledgeReference } from './knowledge.js';
 
 const extractionSchema = {
   type: 'object', additionalProperties: false,
@@ -49,11 +50,29 @@ export async function moderate(extracted: Extracted): Promise<boolean> {
   return result.results[0]?.flagged ?? true;
 }
 
-export async function generateCopy(extracted: Extracted, duration: number, systemPrompt: string) {
+// Generate the promo script, grounded in the `knowledge/` reference base. The
+// authored instruction sets the task + JSON contract; the knowledge base (loaded
+// at startup from every `-v2` folder) supplies the marketing craft — ICP/offer,
+// hooks, CTAs, voice, structure, emotion — so adding folders enriches the output.
+export async function generateCopy(extracted: Extracted, duration: number) {
   const wordTarget = { 15: 40, 30: 80, 60: 160 }[duration as 15 | 30 | 60];
+  const instruction = [
+    'You are a promo-ad script engine for solo founders, indie hackers and vibe coders.',
+    'Using ONLY the supplied product facts and the REFERENCE KNOWLEDGE below, write ONE spoken',
+    `${duration}-second promo script of roughly ${wordTarget} words on the beat map`,
+    'Hook (0-3s) -> Problem -> Turn -> Proof -> CTA. Lead with the pain or the after-state, never a',
+    'raw feature, and end on exactly ONE low-friction CTA. Spoken cadence only: short lines, contractions,',
+    'numbers said cleanly ("sixty seconds", not "60s"). Match the requested tone. Never fabricate numbers,',
+    'names, or claims the facts do not support. Also return 2-3 short tips. Return strict JSON with',
+    'marketing_text and tips.',
+  ].join(' ');
+  const reference = knowledgeReference();
+  const systemPrompt = reference
+    ? `${instruction}\n\n--- REFERENCE KNOWLEDGE ---\n${reference}`
+    : instruction;
   const response = await client().responses.create({
     model: process.env.OPENAI_MODEL ?? 'gpt-5-mini',
-    input: [{ role: 'system', content: `${systemPrompt}\nTarget roughly ${wordTarget} words. Use only the supplied typed facts.` },
+    input: [{ role: 'system', content: systemPrompt },
       { role: 'user', content: JSON.stringify(extracted) }],
     text: { format: { type: 'json_schema', name: 'marketing_copy', strict: true, schema: copySchema } },
   });
