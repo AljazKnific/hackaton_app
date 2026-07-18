@@ -1,5 +1,5 @@
-name: taskboard
-description: A Flutter client for the Taskboard API.
+name: promo_buddy
+description: A Flutter marketing-copy and voice-ad generator.
 publish_to: none
 version: 1.0.0+1
 

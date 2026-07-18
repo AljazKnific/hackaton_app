@@ -23,6 +23,11 @@ const copySchema = {
 };
 function client() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function json(text) { return JSON.parse(text); }
+function logOpenAiResult(operation, response) {
+    // Log the model output for local development troubleshooting. Do not log
+    // request headers or environment variables: they contain credentials.
+    console.info(`[openai:${operation}] response_id=${response.id}`, response.output_text);
+}
 export async function extractFacts(message, existing) {
     const response = await client().responses.create({
         model: process.env.OPENAI_MODEL ?? 'gpt-5-mini',
@@ -30,6 +35,7 @@ export async function extractFacts(message, existing) {
             { role: 'user', content: JSON.stringify({ existing, message }) }],
         text: { format: { type: 'json_schema', name: 'fact_extraction', strict: true, schema: extractionSchema } },
     });
+    logOpenAiResult('extract-facts', response);
     return json(response.output_text);
 }
 export async function moderate(extracted) {
@@ -44,10 +50,11 @@ export async function generateCopy(extracted, duration, systemPrompt) {
             { role: 'user', content: JSON.stringify(extracted) }],
         text: { format: { type: 'json_schema', name: 'marketing_copy', strict: true, schema: copySchema } },
     });
+    logOpenAiResult('generate-copy', response);
     return json(response.output_text);
 }
 export async function createSpeech(text, voiceId, settings) {
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
         method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY ?? '', 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
         body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: settings }),
     });

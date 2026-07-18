@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// VoiceMarketing.ai design tokens.
+/// PromoBuddy design tokens.
 ///
 /// Hard constraint: every colour traces back to one of five source hues.
 /// The "neutrals" are derived from those hues (cool ink = darkened teal,

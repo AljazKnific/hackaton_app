@@ -1,3 +1,3 @@
-# taskboard
+# PromoBuddy
 
 A new Flutter project.

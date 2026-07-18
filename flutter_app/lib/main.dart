@@ -11,14 +11,21 @@ class MarketingApp extends StatelessWidget {
   const MarketingApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'VoiceMarketing.ai',
+        title: 'PromoBuddy',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         home: const GeneratorPage(),
       );
 }
 
-enum Phase { intake, copyReady, voiceLength, generating, playback }
+enum Phase {
+  intake,
+  copyGenerating,
+  copyReady,
+  voiceLength,
+  generating,
+  playback
+}
 
 /// The four contract fields, in a fixed display order.
 const _fields = ['product_name', 'target_audience', 'tone', 'key_benefit'];
@@ -159,22 +166,30 @@ class _GeneratorPageState extends State<GeneratorPage> {
 
   void _addFollowup() {
     if (manual) {
-      _addMsg("We've talked it through a few times — let's just fill the last "
-          'details directly. Quicker this way.', fromUser: false);
+      _addMsg(
+          "We've talked it through a few times — let's just fill the last "
+          'details directly. Quicker this way.',
+          fromUser: false);
     } else if (complete) {
-      _addMsg("Perfect — I've got everything I need. Ready to write your script.",
+      _addMsg(
+          "Perfect — I've got everything I need. Ready to write your script.",
           fromUser: false);
     } else {
       final next = _fields.firstWhere((f) => missing.contains(f),
           orElse: () => missing.first);
-      _addMsg(_fieldQuestions[next] ?? 'Tell me a little more?', fromUser: false);
+      _addMsg(_fieldQuestions[next] ?? 'Tell me a little more?',
+          fromUser: false);
     }
   }
 
   Future<void> _send(String raw) => run(() async {
         final text = raw.trim();
         if (text.isEmpty) return;
-        session ??= await api.createSession(duration);
+        if (session == null) {
+          session = await api.createSession(duration);
+          // Await extraction before allowing the UI to consider the session complete.
+          missing = List.of(_fields);
+        }
         _addMsg(text, fromUser: true);
         chatInput.clear();
         final r = await api.message(session!, text);
@@ -192,14 +207,20 @@ class _GeneratorPageState extends State<GeneratorPage> {
       });
 
   Future<void> makeText() => run(() async {
-        final r = await api.generateText(session!);
-        final v = await api.voices();
-        setState(() {
-          copy = r['marketing_text'] as String;
-          tips = List<String>.from(r['tips'] ?? []);
-          voices = v;
-          phase = Phase.copyReady;
-        });
+        setState(() => phase = Phase.copyGenerating);
+        try {
+          final r = await api.generateText(session!);
+          final v = await api.voices();
+          setState(() {
+            copy = r['marketing_text'] as String;
+            tips = List<String>.from(r['tips'] ?? []);
+            voices = v;
+            phase = Phase.copyReady;
+          });
+        } catch (_) {
+          if (mounted) setState(() => phase = Phase.intake);
+          rethrow;
+        }
       });
 
   Future<void> generateAd() async {
@@ -272,6 +293,10 @@ class _GeneratorPageState extends State<GeneratorPage> {
         body: AnimatedSwitcher(
           duration: Duration(milliseconds: reduce ? 0 : 450),
           switchInCurve: Curves.easeOut,
+          // Intake variants share controllers. Do not retain the previous screen
+          // during a transition or Flutter attaches a controller twice.
+          layoutBuilder: (currentChild, previousChildren) =>
+              currentChild ?? const SizedBox.shrink(),
           child: KeyedSubtree(
             key: ValueKey('$phase-$manual-$complete'),
             child: _screen(),
@@ -287,6 +312,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
         if (session == null) return _intakeStart();
         if (manual) return _intakeManual();
         return _intakeChat();
+      case Phase.copyGenerating:
+        return _copyGenerating();
       case Phase.copyReady:
         return _copyReady();
       case Phase.voiceLength:
@@ -314,30 +341,33 @@ class _GeneratorPageState extends State<GeneratorPage> {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
-            child: Text('VoiceMarketing',
-                style: micro(color: AppColors.teal)),
+            child: Text('PromoBuddy', style: micro(color: AppColors.teal)),
           ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 20),
               children: [
                 Text('Turn your idea\ninto a spoken ad.',
-                    style: serif(size: 30, weight: FontWeight.w500, height: 1.05)),
+                    style:
+                        serif(size: 30, weight: FontWeight.w500, height: 1.05)),
                 const SizedBox(height: 8),
                 Text(
                     'Describe what you’re selling in a sentence — I’ll ask for '
                     'anything I still need.',
-                    style: sans(size: 14, color: AppColors.ink600, height: 1.5)),
+                    style:
+                        sans(size: 14, color: AppColors.ink600, height: 1.5)),
                 const SizedBox(height: 22),
                 Text('HOW LONG SHOULD IT BE?', style: micro()),
                 const SizedBox(height: 9),
                 _LengthPicker(
                     value: duration,
-                    onChanged: busy ? null : (v) => setState(() => duration = v)),
+                    onChanged:
+                        busy ? null : (v) => setState(() => duration = v)),
                 const SizedBox(height: 22),
                 _PaperField(
                   controller: description,
-                  hint: 'e.g. A reusable beeswax food wrap that replaces plastic '
+                  hint:
+                      'e.g. A reusable beeswax food wrap that replaces plastic '
                       'wrap, for eco-minded home cooks…',
                   minLines: 4,
                   maxLines: 7,
@@ -416,13 +446,13 @@ class _GeneratorPageState extends State<GeneratorPage> {
       alignment: me ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 11),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
         decoration: BoxDecoration(
           color: me ? AppColors.tealSoft : AppColors.paper1,
-          border: Border.all(
-              color: me ? const Color(0xFFC4DEE0) : AppColors.line),
+          border:
+              Border.all(color: me ? const Color(0xFFC4DEE0) : AppColors.line),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -465,9 +495,11 @@ class _GeneratorPageState extends State<GeneratorPage> {
             children: [
               const Ribbon(),
               const SizedBox(width: 9),
-              Text('listening',
+              Text('Putting it together',
                   style: sans(
-                      size: 11, color: AppColors.ink400, weight: FontWeight.w500)),
+                      size: 11,
+                      color: AppColors.ink400,
+                      weight: FontWeight.w500)),
             ],
           ),
         ),
@@ -504,7 +536,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.azure, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.azure, width: 2),
                   ),
                 ),
               ),
@@ -602,7 +635,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
     return _canvas(
       child: Column(
         children: [
-          StepHeader(step: 2, onBack: () => setState(() => phase = Phase.intake)),
+          StepHeader(
+              step: 2, onBack: () => setState(() => phase = Phase.intake)),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(22, 6, 22, 20),
@@ -610,9 +644,11 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 Text('Here’s your script',
                     style: serif(size: 26, weight: FontWeight.w500)),
                 const SizedBox(height: 4),
-                Text('Read it out loud once — that’s exactly what your listener '
+                Text(
+                    'Read it out loud once — that’s exactly what your listener '
                     'hears.',
-                    style: sans(size: 13.5, color: AppColors.ink600, height: 1.5)),
+                    style:
+                        sans(size: 13.5, color: AppColors.ink600, height: 1.5)),
                 const SizedBox(height: 20),
                 _ScriptCard(copy: copy!),
                 const SizedBox(height: 14),
@@ -622,7 +658,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                     const SizedBox(width: 20),
                     if (tone != null && tone.isNotEmpty)
                       _metric('Tone', _titleCase(tone)),
-                    if (tone != null && tone.isNotEmpty) const SizedBox(width: 20),
+                    if (tone != null && tone.isNotEmpty)
+                      const SizedBox(width: 20),
                     _metric('Words', '$words'),
                   ],
                 ),
@@ -656,7 +693,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
           Text(label.toUpperCase(), style: micro().copyWith(fontSize: 10)),
           const SizedBox(height: 3),
           Text(value,
-              style: sans(size: 15, weight: FontWeight.w600, color: AppColors.ink800)),
+              style: sans(
+                  size: 15, weight: FontWeight.w600, color: AppColors.ink800)),
         ],
       );
 
@@ -674,12 +712,15 @@ class _GeneratorPageState extends State<GeneratorPage> {
                   borderRadius: BorderRadius.circular(7)),
               child: Text('$n',
                   style: sans(
-                      size: 11, weight: FontWeight.w600, color: AppColors.ink800)),
+                      size: 11,
+                      weight: FontWeight.w600,
+                      color: AppColors.ink800)),
             ),
             const SizedBox(width: 9),
             Expanded(
               child: Text(tip,
-                  style: sans(size: 12.5, color: AppColors.ink600, height: 1.45)),
+                  style:
+                      sans(size: 12.5, color: AppColors.ink600, height: 1.45)),
             ),
           ],
         ),
@@ -701,7 +742,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                     style: serif(size: 26, weight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Text('Presets tuned for narration — tap to choose.',
-                    style: sans(size: 13.5, color: AppColors.ink600, height: 1.5)),
+                    style:
+                        sans(size: 13.5, color: AppColors.ink600, height: 1.5)),
                 const SizedBox(height: 16),
                 for (var i = 0; i < voices.length; i++)
                   _voiceCard(voices[i], i),
@@ -785,7 +827,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                         : Border.all(color: AppColors.ink400, width: 1.5),
                   ),
                   child: selected
-                      ? const Icon(Icons.check, size: 12, color: AppColors.ink950)
+                      ? const Icon(Icons.check,
+                          size: 12, color: AppColors.ink950)
                       : null,
                 ),
               ],
@@ -809,13 +852,89 @@ class _GeneratorPageState extends State<GeneratorPage> {
             const SizedBox(width: 10),
             Text('${duration}s',
                 style: sans(
-                    size: 15, weight: FontWeight.w700, color: AppColors.ink950)),
+                    size: 15,
+                    weight: FontWeight.w700,
+                    color: AppColors.ink950)),
             const SizedBox(width: 6),
             Text('· ${_lengthTags[duration]}',
                 style: sans(size: 13, color: AppColors.ink600)),
             const Spacer(),
             Text('set at the start',
                 style: sans(size: 11.5, color: AppColors.ink400)),
+          ],
+        ),
+      );
+
+  // ---- loading · copy generation --------------------------------------
+
+  Widget _copyGenerating() => _canvas(
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 34),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Ribbon(
+                      bars: 7,
+                      barWidth: 5,
+                      maxHeight: 56,
+                      color: AppColors.teal,
+                      glow: true),
+                  const SizedBox(height: 28),
+                  Text('Finding the right words',
+                      textAlign: TextAlign.center,
+                      style: serif(size: 28, weight: FontWeight.w500)),
+                  const SizedBox(height: 10),
+                  Text(
+                      'We’re shaping a $duration-second script from the details you shared.',
+                      textAlign: TextAlign.center,
+                      style: sans(
+                          size: 13.5, color: AppColors.ink600, height: 1.55)),
+                  const SizedBox(height: 28),
+                  _copyGenStep('Brief understood', done: true),
+                  _copyGenStep('Writing your script', active: true),
+                  _copyGenStep('Adding useful tips'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _copyGenStep(String label, {bool done = false, bool active = false}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: done ? AppColors.sage : AppColors.paper1,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: active ? AppColors.teal : AppColors.line,
+                    width: active ? 2 : 1),
+              ),
+              child: done
+                  ? const Icon(Icons.check, size: 12, color: AppColors.ink950)
+                  : active
+                      ? const Ribbon(
+                          bars: 3,
+                          barWidth: 2,
+                          maxHeight: 9,
+                          color: AppColors.teal)
+                      : null,
+            ),
+            const SizedBox(width: 10),
+            Text(label,
+                style: sans(
+                    size: 13,
+                    weight: active ? FontWeight.w600 : FontWeight.w500,
+                    color: active ? AppColors.ink950 : AppColors.ink600)),
           ],
         ),
       );
@@ -1038,7 +1157,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
             ]),
             const SizedBox(height: 8),
             SelectableText(copy ?? '',
-                style: sans(size: 12.5, color: AppColors.studioText, height: 1.5)),
+                style:
+                    sans(size: 12.5, color: AppColors.studioText, height: 1.5)),
           ],
         ),
       );
@@ -1046,46 +1166,57 @@ class _GeneratorPageState extends State<GeneratorPage> {
   Widget _playbackActions() => Container(
         padding: EdgeInsets.fromLTRB(
             22, 12, 22, 14 + MediaQuery.of(context).padding.bottom),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: InkWell(
-                onTap: () => _snack('Saved to $audioPath'),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                      color: AppColors.azure,
-                      borderRadius: BorderRadius.circular(16)),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.download, size: 18, color: AppColors.ink950),
-                      const SizedBox(width: 8),
-                      Text('Download MP3',
-                          style: sans(
-                              size: 14.5,
-                              weight: FontWeight.w600,
-                              color: AppColors.ink950)),
-                    ],
-                  ),
+            InkWell(
+              onTap: () => _snack('Saved to $audioPath'),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: AppColors.azure,
+                    borderRadius: BorderRadius.circular(16)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.download,
+                        size: 18, color: AppColors.ink950),
+                    const SizedBox(width: 8),
+                    Text('Download MP3',
+                        style: sans(
+                            size: 14.5,
+                            weight: FontWeight.w600,
+                            color: AppColors.ink950)),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(height: 8),
             InkWell(
               onTap: startOver,
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                width: 56,
                 height: 52,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: AppColors.studio1,
                   border: Border.all(color: AppColors.studioLine),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.refresh, color: AppColors.paper0, size: 20),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.arrow_back,
+                        color: AppColors.paper0, size: 19),
+                    const SizedBox(width: 8),
+                    Text('Back to start',
+                        style: sans(
+                            size: 14,
+                            weight: FontWeight.w600,
+                            color: AppColors.paper0)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1146,7 +1277,8 @@ class _ScriptCard extends StatelessWidget {
                       height: 1.5,
                       letterSpacing: 0)),
               const SizedBox(height: 14),
-              const MiniWave(color: AppColors.azure, bars: 40, height: 14, seed: 9),
+              const MiniWave(
+                  color: AppColors.azure, bars: 40, height: 14, seed: 9),
             ],
           ),
         ),
@@ -1254,7 +1386,8 @@ class _PaperField extends StatelessWidget {
         hintStyle: sans(size: 13.5, color: AppColors.ink400, height: 1.45),
         filled: true,
         fillColor: AppColors.paper1,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.line),

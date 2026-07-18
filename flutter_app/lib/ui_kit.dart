@@ -14,7 +14,8 @@ List<double> _buildEnvelope() {
   final out = <double>[];
   for (final n in words) {
     for (var i = 0; i < n; i++) {
-      final body = 0.35 + 0.6 * sin((i + 1) / (n + 1) * pi); // rise/fall in a word
+      final body =
+          0.35 + 0.6 * sin((i + 1) / (n + 1) * pi); // rise/fall in a word
       out.add((body * (0.72 + 0.28 * rnd.nextDouble())).clamp(0.08, 1.0));
     }
     out.add(0.07); // breath gap
@@ -47,36 +48,52 @@ class Waveform extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final headIndex = (fraction.clamp(0, 1) * kEnvelope.length).floor();
     return LayoutBuilder(builder: (context, c) {
+      const minBarWidth = 2.0;
+      const gap = 2.0;
+      final availableWidth = c.maxWidth.isFinite ? c.maxWidth : 320.0;
+      // A fixed bar count overflows on narrow phones. Downsample the visual
+      // envelope while preserving the full playback fraction for seeking.
+      final maxBars =
+          max(1, ((availableWidth + gap) / (minBarWidth + gap)).floor())
+              .toInt();
+      final barCount = min(kEnvelope.length, maxBars).toInt();
+      final barWidth =
+          max(1.0, (availableWidth - gap * (barCount - 1)) / barCount)
+              .toDouble();
+      final headIndex = (fraction.clamp(0, 1) * barCount).floor();
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: onSeek == null
             ? null
-            : (d) => onSeek!((d.localPosition.dx / c.maxWidth).clamp(0, 1)),
+            : (d) => onSeek!((d.localPosition.dx / availableWidth).clamp(0, 1)),
         onHorizontalDragUpdate: onSeek == null
             ? null
-            : (d) => onSeek!((d.localPosition.dx / c.maxWidth).clamp(0, 1)),
+            : (d) => onSeek!((d.localPosition.dx / availableWidth).clamp(0, 1)),
         child: SizedBox(
+          width: availableWidth,
           height: height,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              for (var i = 0; i < kEnvelope.length; i++)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 1),
-                  child: Container(
-                    width: i == headIndex ? 3 : 3,
-                    height: max(3, kEnvelope[i] * (height - 10)),
+              for (var i = 0; i < barCount; i++) ...[
+                if (i > 0) const SizedBox(width: gap),
+                Builder(builder: (context) {
+                  final sourceIndex = barCount == 1
+                      ? 0
+                      : (i * (kEnvelope.length - 1) / (barCount - 1)).round();
+                  return Container(
+                    width: barWidth,
+                    height: max(3, kEnvelope[sourceIndex] * (height - 10)),
                     decoration: BoxDecoration(
                       color: i == headIndex
                           ? playhead
                           : (i < headIndex ? playedColor : restColor),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(barWidth),
                     ),
-                  ),
-                ),
+                  );
+                }),
+              ],
             ],
           ),
         ),
@@ -202,7 +219,10 @@ class _RibbonState extends State<Ribbon> with SingleTickerProviderStateMixin {
         color: widget.color,
         borderRadius: BorderRadius.circular(widget.barWidth),
         boxShadow: widget.glow
-            ? [BoxShadow(color: widget.color.withValues(alpha: 0.6), blurRadius: 14)]
+            ? [
+                BoxShadow(
+                    color: widget.color.withValues(alpha: 0.6), blurRadius: 14)
+              ]
             : null,
       ),
     );
@@ -245,7 +265,9 @@ class StepHeader extends StatelessWidget {
                             ? AppColors.azure
                             : i < step
                                 ? AppColors.teal
-                                : (dark ? AppColors.studioLine : AppColors.line),
+                                : (dark
+                                    ? AppColors.studioLine
+                                    : AppColors.line),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -256,7 +278,8 @@ class StepHeader extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Text('Step $step / 3',
-              style: micro(color: dark ? AppColors.studioMeta : AppColors.ink400)),
+              style:
+                  micro(color: dark ? AppColors.studioMeta : AppColors.ink400)),
         ],
       ),
     );
@@ -281,7 +304,8 @@ class _BackButton extends StatelessWidget {
           height: 34,
           decoration: BoxDecoration(
             color: dark ? AppColors.studio1 : AppColors.paper1,
-            border: Border.all(color: dark ? AppColors.studioLine : AppColors.line),
+            border:
+                Border.all(color: dark ? AppColors.studioLine : AppColors.line),
             borderRadius: BorderRadius.circular(11),
           ),
           child: Icon(Icons.arrow_back_ios_new,
@@ -320,7 +344,8 @@ class FieldChip extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: done ? AppColors.sage : Colors.transparent,
-              border: done ? null : Border.all(color: AppColors.ink400, width: 1.5),
+              border:
+                  done ? null : Border.all(color: AppColors.ink400, width: 1.5),
             ),
             child: done
                 ? const Icon(Icons.check, size: 10, color: AppColors.paper0)
@@ -431,8 +456,8 @@ class GhostButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(label,
-              style:
-                  sans(size: 15, weight: FontWeight.w600, color: AppColors.ink800)),
+              style: sans(
+                  size: 15, weight: FontWeight.w600, color: AppColors.ink800)),
         ),
       ),
     );

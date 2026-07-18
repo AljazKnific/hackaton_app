@@ -14,12 +14,13 @@ development). These secrets only belong on the backend:
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5-mini
 ELEVENLABS_API_KEY=...
-ELEVENLABS_CALM_VOICE_ID=...
+ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb
 ```
 
-`ELEVENLABS_CALM_VOICE_ID` is required before the **Calm** preset is seeded.
-This makes the currently requested preset explicit and avoids embedding a
-possibly unlicensed or untested ElevenLabs voice ID in source control.
+Four delivery presets are seeded from `ELEVENLABS_VOICE_ID`: Calm & reassuring,
+Energetic & upbeat, Professional & confident, and Casual & conversational.
+They share one voice identity with different delivery settings; replace the
+voice ID or add per-preset IDs later if you need different speakers.
 
 ## Run with Docker
 

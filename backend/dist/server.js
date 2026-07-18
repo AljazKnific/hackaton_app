@@ -5,5 +5,14 @@ const pool = createPool();
 await pool.query('SELECT 1');
 await seedConfiguration(pool);
 const app = createApp(pool);
-app.listen(port, () => console.log(`Marketing API listening on http://localhost:${port}`));
+const server = app.listen(port, () => console.log(`Marketing API listening on http://localhost:${port}`));
 setInterval(() => cleanExpiredSessions(pool).catch(console.error), 60 * 60 * 1000).unref();
+async function shutdown(signal) {
+    console.info(`Received ${signal}; shutting down gracefully.`);
+    server.close(async () => {
+        await pool.end();
+        process.exit(0);
+    });
+}
+process.once('SIGTERM', () => void shutdown('SIGTERM'));
+process.once('SIGINT', () => void shutdown('SIGINT'));

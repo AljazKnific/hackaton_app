@@ -27,6 +27,11 @@ const copySchema = {
 
 function client(): OpenAI { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function json<T>(text: string): T { return JSON.parse(text) as T; }
+function logOpenAiResult(operation: string, response: OpenAI.Responses.Response): void {
+  // Log the model output for local development troubleshooting. Do not log
+  // request headers or environment variables: they contain credentials.
+  console.info(`[openai:${operation}] response_id=${response.id}`, response.output_text);
+}
 
 export async function extractFacts(message: string, existing: Extracted) {
   const response = await client().responses.create({
@@ -35,6 +40,7 @@ export async function extractFacts(message: string, existing: Extracted) {
       { role: 'user', content: JSON.stringify({ existing, message }) }],
     text: { format: { type: 'json_schema', name: 'fact_extraction', strict: true, schema: extractionSchema } },
   });
+  logOpenAiResult('extract-facts', response);
   return json<{ complete: boolean; missing_fields: (keyof Extracted)[]; extracted: Extracted }>(response.output_text);
 }
 
@@ -51,11 +57,12 @@ export async function generateCopy(extracted: Extracted, duration: number, syste
       { role: 'user', content: JSON.stringify(extracted) }],
     text: { format: { type: 'json_schema', name: 'marketing_copy', strict: true, schema: copySchema } },
   });
+  logOpenAiResult('generate-copy', response);
   return json<{ marketing_text: string; tips: string[] }>(response.output_text);
 }
 
 export async function createSpeech(text: string, voiceId: string, settings: Record<string, number>): Promise<string> {
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY ?? '', 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
     body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: settings }),
   });
