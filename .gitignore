@@ -1,0 +1,16 @@
+# Node
+backend/node_modules/
+backend/.env
+postgres-data/
+
+# Flutter/Dart
+flutter_app/.dart_tool/
+flutter_app/.packages
+flutter_app/build/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+
+# Editors
+.DS_Store
+.idea/
+.vscode/

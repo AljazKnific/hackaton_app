@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: taskboard
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: taskboard
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://taskboard:taskboard@db:5432/taskboard
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_CALM_VOICE_ID: ${ELEVENLABS_CALM_VOICE_ID:-}
+      FILE_STORAGE_PATH: /var/lib/taskboard/audio
+    ports:
+      - "3000:3000"
+    volumes:
+      - audio-data:/var/lib/taskboard/audio
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres-data:
+  audio-data:

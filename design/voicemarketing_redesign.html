@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceMarketing.ai — Design Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS — every value traces to the 5 source hues
+     azure #42CAFD · teal #66B3BA · sage #8EB19D · yellow #F6EFA6 · blush #F0D2D1
+     ============================================================ */
+  :root{
+    /* source hues */
+    --azure:#42CAFD; --teal:#66B3BA; --sage:#8EB19D; --yellow:#F6EFA6; --blush:#F0D2D1;
+    /* tints of source hues (accents/surfaces only) */
+    --azure-soft:#D6F1FD; --teal-soft:#DCEDEF; --sage-soft:#E1ECE5; --blush-soft:#FBEDEC;
+    /* warm paper ramp (lightened blush ~6°) */
+    --paper-0:#FAF5F4; --paper-1:#F4ECEB; --line:#E8DAD9;
+    /* cool ink ramp (darkened teal ~190°) */
+    --ink-950:#0E191B; --ink-800:#1A2A2E; --ink-600:#3F555A; --ink-400:#6F8A90;
+    /* dark studio (playback only) */
+    --studio-0:#0E191B; --studio-1:#16282C; --studio-line:#26454B;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+    --r:22px; --r-sm:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(120% 80% at 15% -10%, var(--blush-soft), transparent 60%),
+      radial-gradient(120% 80% at 90% 0%, var(--teal-soft), transparent 55%),
+      var(--paper-0);
+    color:var(--ink-950); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; padding:40px 28px 72px;
+  }
+  a{color:inherit}
+
+  /* ---------- review header ---------- */
+  .head{max-width:1180px;margin:0 auto 34px}
+  .kicker{font:600 11px/1 var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--ink-400)}
+  h1.title{font:600 44px/1.02 var(--serif);letter-spacing:-.01em;margin:10px 0 6px;color:var(--ink-950)}
+  h1.title .dim{color:var(--teal)}
+  .sub{font:400 16px/1.5 var(--sans);color:var(--ink-600);max-width:64ch}
+  .pov{display:inline-flex;gap:8px;align-items:center;margin-top:14px;background:var(--paper-1);
+    border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:500 13px/1 var(--sans);color:var(--ink-800)}
+  .pov b{color:var(--teal)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:26px;margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
+  .legend section{min-width:180px}
+  .legend h3{font:600 11px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-400);margin-bottom:12px}
+  .sw{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{display:flex;flex-direction:column;gap:5px;align-items:center;font:500 10px/1 var(--sans);color:var(--ink-400)}
+  .chip i{width:34px;height:34px;border-radius:10px;border:1px solid rgba(14,25,27,.08)}
+  .ramp{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--line);width:210px}
+  .ramp i{height:34px;flex:1;position:relative}
+  .ramp i span{position:absolute;bottom:3px;left:0;right:0;text-align:center;font:600 8px/1 var(--sans)}
+  .type-spec b{display:block;font:500 26px/1.1 var(--serif);color:var(--ink-950)}
+  .type-spec small{display:block;font:400 13px/1.5 var(--sans);color:var(--ink-600);margin-top:4px}
+  .type-spec em{font-style:normal;color:var(--ink-400);font-size:11px;letter-spacing:.04em}
+
+  /* ---------- frame rail ---------- */
+  .rail{display:flex;gap:26px;overflow-x:auto;padding:8px 4px 24px;max-width:1180px;margin:0 auto;scrollbar-width:thin}
+  .stage{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .stage .cap{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-400);text-align:center}
+  .stage .cap b{display:block;color:var(--teal);font-size:12px;letter-spacing:.14em}
+  .stage .note{max-width:288px;font:400 12px/1.5 var(--sans);color:var(--ink-600);text-align:center}
+
+  .phone{width:300px;height:648px;border-radius:44px;padding:11px;
+    background:linear-gradient(160deg,#e9dbda,#f7efee);
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 30px 60px -30px rgba(14,25,27,.5), 0 2px 10px rgba(14,25,27,.08)}
+  .screen{position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:var(--paper-0);
+    display:flex;flex-direction:column}
+  .screen.dark{background:var(--studio-0);color:var(--paper-0)}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:26px;border-radius:14px;
+    background:var(--ink-950);z-index:20;opacity:.9}
+  .screen.dark .notch{background:#000}
+
+  /* status/top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:15px 20px 0;font:600 12px/1 var(--sans);color:var(--ink-600);z-index:5}
+  .screen.dark .topbar{color:var(--paper-1)}
+  .topbar .dots{display:flex;gap:4px;align-items:center}
+  .topbar .dots i{width:15px;height:9px;border-radius:2px;border:1.5px solid currentColor;opacity:.6}
+
+  /* step header */
+  .apphead{padding:18px 22px 12px;display:flex;align-items:center;gap:12px}
+  .back{width:34px;height:34px;border-radius:11px;border:1px solid var(--line);background:var(--paper-1);
+    display:grid;place-items:center;color:var(--ink-800);flex:0 0 auto}
+  .back svg{width:15px;height:15px}
+  .steptrack{flex:1;display:flex;gap:5px}
+  .steptrack i{height:4px;flex:1;border-radius:3px;background:var(--line)}
+  .steptrack i.on{background:var(--teal)}
+  .steptrack i.now{background:var(--azure)}
+  .stepno{font:600 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);flex:0 0 auto}
+
+  .body{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:4px 22px 0}
+  h2.s{font:500 26px/1.08 var(--serif);letter-spacing:-.01em;color:var(--ink-950);margin:6px 0 4px}
+  .lede{font:400 13.5px/1.5 var(--sans);color:var(--ink-600);margin-bottom:14px}
+
+  /* field chips (intake) */
+  .fields{display:flex;gap:7px;flex-wrap:wrap;padding:0 22px 10px}
+  .field{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
+    font:600 11px/1 var(--sans);border:1px solid var(--line);background:var(--paper-1);color:var(--ink-400)}
+  .field.done{background:var(--sage-soft);border-color:var(--sage);color:var(--ink-800)}
+  .field.done .tick{background:var(--sage);color:var(--paper-0)}
+  .field .tick{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--ink-400)}
+  .field.done .tick{border:none}
+  .field .tick svg{width:9px;height:9px}
+  .field.wait{border-style:dashed}
+
+  /* chat */
+  .thread{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:11px;padding:6px 0 4px}
+  .msg{max-width:82%;padding:11px 14px;font:400 13.5px/1.45 var(--sans)}
+  .msg.ai{align-self:flex-start;background:var(--paper-1);border:1px solid var(--line);color:var(--ink-800);
+    border-radius:16px 16px 16px 5px}
+  .msg.me{align-self:flex-end;background:var(--teal-soft);border:1px solid #c4dee0;color:var(--ink-950);
+    border-radius:16px 16px 5px 16px}
+  .msg .who{font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px}
+  .msg.me .who{color:var(--ink-400)}
+  /* thinking ribbon = voice DNA, not typing dots */
+  .thinking{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;background:var(--paper-1);
+    border:1px solid var(--line);border-radius:16px 16px 16px 5px;padding:12px 15px}
+  .ribbon{display:flex;align-items:center;gap:3px;height:20px}
+  .ribbon b{width:3px;border-radius:3px;background:var(--azure);display:block;animation:pulse 1s ease-in-out infinite}
+  .thinking .lab{font:500 11px/1 var(--sans);color:var(--ink-400)}
+  @keyframes pulse{0%,100%{height:5px;opacity:.55}50%{height:17px;opacity:1}}
+
+  .inputbar{margin:auto -22px 0;padding:12px 18px calc(12px + env(safe-area-inset-bottom));background:var(--paper-0);
+    border-top:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .inputbar .box{flex:1;background:var(--paper-1);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+    font:400 13px/1.3 var(--sans);color:var(--ink-400)}
+  .send{width:44px;height:44px;border-radius:14px;background:var(--azure);flex:0 0 auto;display:flex;align-items:center;
+    justify-content:center;gap:2px;box-shadow:0 6px 14px -6px var(--azure)}
+  .send b{width:2.5px;border-radius:3px;background:var(--ink-950);display:block}
+
+  /* fallback form */
+  .formnote{display:flex;gap:9px;align-items:flex-start;background:var(--yellow);border-radius:var(--r-sm);
+    padding:11px 13px;margin-bottom:16px}
+  .formnote svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px;color:var(--ink-800)}
+  .formnote p{font:500 12px/1.45 var(--sans);color:var(--ink-800)}
+  .formnote p b{font-weight:700}
+  .flabel{font:600 11px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-600);margin:14px 0 7px;display:flex;gap:7px;align-items:center}
+  .flabel .dot{width:6px;height:6px;border-radius:50%;background:var(--azure)}
+  .fin{width:100%;background:var(--paper-1);border:1px solid var(--line);border-radius:12px;padding:12px 13px;
+    font:400 14px/1.3 var(--sans);color:var(--ink-950)}
+  .fin.focus{border-color:var(--azure);box-shadow:0 0 0 3px rgba(66,202,253,.28)}
+  .fin.ph{color:var(--ink-400)}
+
+  /* copy ready */
+  .scriptcard{background:var(--paper-1);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 16px;position:relative}
+  .scriptcard .tag{position:absolute;top:-11px;left:16px;background:var(--ink-950);color:var(--paper-0);
+    font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:6px 11px;border-radius:999px}
+  .scriptcard .tag em{font-style:normal;color:var(--yellow)}
+  .script{font:400 18.5px/1.5 var(--serif);color:var(--ink-950)}
+  .script .hl{background:linear-gradient(transparent 62%, var(--yellow) 62%);padding:0 1px}
+  .underrib{display:flex;gap:2px;align-items:flex-end;height:14px;margin-top:14px;opacity:.9}
+  .underrib b{width:3px;border-radius:3px;background:var(--azure);display:block}
+  .meta-row{display:flex;gap:16px;margin-top:14px}
+  .meta-row div{font:600 11px/1.3 var(--sans);color:var(--ink-400)}
+  .meta-row div b{display:block;font:600 15px/1.2 var(--sans);color:var(--ink-800);margin-top:3px}
+  .tips{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .tip{display:flex;gap:9px;align-items:flex-start;font:400 12.5px/1.45 var(--sans);color:var(--ink-600)}
+  .tip .b{width:20px;height:20px;border-radius:7px;background:var(--sage-soft);color:var(--ink-800);flex:0 0 auto;
+    display:grid;place-items:center;font:600 11px/1 var(--sans)}
+
+  /* primary CTA */
+  .cta{margin:auto -22px 0;padding:14px 22px calc(16px + env(safe-area-inset-bottom));background:
+    linear-gradient(transparent, var(--paper-0) 40%)}
+  .btn{width:100%;height:54px;border-radius:16px;background:var(--azure);color:var(--ink-950);
+    font:600 15.5px/1 var(--sans);display:flex;align-items:center;justify-content:center;gap:9px;
+    box-shadow:0 12px 24px -12px var(--azure), 0 1px 0 rgba(255,255,255,.5) inset}
+  .btn svg{width:18px;height:18px}
+  .btn.ghost{background:var(--paper-1);border:1px solid var(--line);color:var(--ink-800);box-shadow:none;height:50px}
+  .btn.on-dark{background:var(--azure);color:var(--ink-950)}
+
+  /* voice + length */
+  .vlist{display:flex;flex-direction:column;gap:9px;overflow:hidden}
+  .voice{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:16px;border:1px solid var(--line);
+    background:var(--paper-1)}
+  .voice.sel{border:1.5px solid var(--azure);background:var(--azure-soft)}
+  .voice .av{width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:grid;place-items:center}
+  .voice .txt{flex:1;min-width:0}
+  .voice .txt b{display:block;font:600 14px/1.2 var(--sans);color:var(--ink-950)}
+  .voice .txt small{font:400 11.5px/1.3 var(--sans);color:var(--ink-600)}
+  .voice .prev{display:flex;align-items:center;gap:2px;height:22px;flex:0 0 auto}
+  .voice .prev b{width:2.5px;border-radius:3px;display:block;background:var(--ink-400)}
+  .voice.sel .prev b{background:var(--azure)}
+  .voice .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ink-400);flex:0 0 auto;display:grid;place-items:center}
+  .voice.sel .radio{border-color:var(--azure);background:var(--azure)}
+  .voice.sel .radio svg{width:11px;height:11px;color:var(--ink-950)}
+  .lenlabel{font:600 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-400);margin:18px 0 9px}
+  .seg{display:flex;background:var(--paper-1);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+  .seg div{flex:1;text-align:center;padding:11px 0;border-radius:11px;font:600 14px/1 var(--sans);color:var(--ink-600)}
+  .seg div small{display:block;font:500 10px/1 var(--sans);color:var(--ink-400);margin-top:4px;letter-spacing:.04em}
+  .seg div.on{background:var(--ink-950);color:var(--paper-0)}
+  .seg div.on small{color:var(--teal)}
+
+  /* generating (transition to dark) */
+  .gen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    background:radial-gradient(90% 60% at 50% 40%, var(--studio-1), var(--studio-0));color:var(--paper-0);padding:0 34px}
+  .gen .bigrib{display:flex;align-items:center;gap:5px;height:66px;margin-bottom:26px}
+  .gen .bigrib b{width:5px;border-radius:5px;background:var(--azure);display:block;box-shadow:0 0 16px -2px var(--azure);
+    animation:gpulse 1.1s ease-in-out infinite}
+  @keyframes gpulse{0%,100%{height:10px;opacity:.5}50%{height:56px;opacity:1}}
+  .gen h3{font:500 25px/1.1 var(--serif);color:var(--paper-0);margin-bottom:9px}
+  .gen p{font:400 13.5px/1.5 var(--sans);color:#B9CDD1;max-width:26ch}
+  .gen .steps{margin-top:26px;display:flex;flex-direction:column;gap:11px;width:100%;max-width:210px}
+  .gen .gstep{display:flex;align-items:center;gap:10px;font:500 12.5px/1 var(--sans);color:#8FA9AE;text-align:left}
+  .gen .gstep.done{color:var(--paper-0)}
+  .gen .gstep .b{width:20px;height:20px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    border:1.5px solid var(--studio-line)}
+  .gen .gstep.done .b{background:var(--sage);border-color:var(--sage);color:var(--studio-0)}
+  .gen .gstep.now .b{border-color:var(--azure)}
+  .gen .gstep .b svg{width:10px;height:10px}
+  .gen .gstep.now .b i{width:7px;height:7px;border-radius:50%;background:var(--azure);animation:pulse2 1s infinite}
+  @keyframes pulse2{0%,100%{opacity:.4}50%{opacity:1}}
+
+  /* playback (dark studio) */
+  .pb{flex:1;display:flex;flex-direction:column;padding:6px 22px 0}
+  .pb .ey{font:600 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:6px}
+  .pb h2{font:500 24px/1.1 var(--serif);color:var(--paper-0);margin-bottom:3px}
+  .pb .by{font:400 12.5px/1.4 var(--sans);color:#9DB5B9;margin-bottom:18px}
+  .wavewrap{background:var(--studio-1);border:1px solid var(--studio-line);border-radius:var(--r);padding:20px 16px 16px}
+  .wave{display:flex;align-items:center;gap:2px;height:82px;justify-content:center}
+  .wave b{width:3px;border-radius:3px;display:block;flex:0 0 auto}
+  .wtime{display:flex;justify-content:space-between;margin-top:12px;font:600 11px/1 var(--sans);color:#7E999E}
+  .wtime .cur{color:var(--azure)}
+  .transport{display:flex;align-items:center;justify-content:center;gap:26px;margin:20px 0 4px}
+  .tbtn{color:#B9CDD1}
+  .tbtn svg{width:26px;height:26px}
+  .play{width:72px;height:72px;border-radius:50%;background:var(--azure);display:grid;place-items:center;
+    box-shadow:0 16px 32px -12px var(--azure),0 0 0 8px rgba(66,202,253,.14)}
+  .play svg{width:28px;height:28px;color:var(--ink-950)}
+  .srcbox{margin-top:18px;background:var(--studio-1);border:1px solid var(--studio-line);border-radius:16px;padding:14px 15px}
+  .srcbox .h{display:flex;align-items:center;gap:7px;font:600 10px/1 var(--sans);letter-spacing:.14em;
+    text-transform:uppercase;color:#7E999E;margin-bottom:8px}
+  .srcbox .h .d{width:6px;height:6px;border-radius:50%;background:var(--sage)}
+  .srcbox p{font:400 12.5px/1.5 var(--sans);color:#C6D6D9}
+  .pb .dl{margin:16px -22px 0;padding:14px 22px calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px}
+  .dlbtn{flex:1;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font:600 14.5px/1 var(--sans)}
+  .dlbtn.main{background:var(--azure);color:var(--ink-950)}
+  .dlbtn.sec{background:var(--studio-1);border:1px solid var(--studio-line);color:var(--paper-0);flex:0 0 56px}
+  .dlbtn svg{width:18px;height:18px}
+
+  .foot{max-width:1180px;margin:26px auto 0;font:400 12px/1.6 var(--sans);color:var(--ink-400);
+    border-top:1px solid var(--line);padding-top:16px}
+  .foot b{color:var(--ink-600)}
+
+  @media (prefers-reduced-motion:reduce){
+    .ribbon b,.gen .bigrib b,.gen .gstep.now .b i{animation:none!important}
+    .ribbon b{height:11px!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="kicker">Design review · mobile · Flutter build to follow</div>
+  <h1 class="title">VoiceMarketing<span class="dim">.ai</span></h1>
+  <p class="sub">A two-minute utility that turns a rough product description into a short narrated audio ad. Redesigned around a single idea — <b>your text, spoken</b> — with a waveform motif that runs through every screen.</p>
+  <div class="pov">Point of view: <b>reduce cognitive load</b> — one decision per screen, not more whitespace.</div>
+
+  <div class="legend">
+    <section>
+      <h3>Source hues · accents only</h3>
+      <div class="sw">
+        <div class="chip"><i style="background:#42CAFD"></i>azure</div>
+        <div class="chip"><i style="background:#66B3BA"></i>teal</div>
+        <div class="chip"><i style="background:#8EB19D"></i>sage</div>
+        <div class="chip"><i style="background:#F6EFA6"></i>yellow</div>
+        <div class="chip"><i style="background:#F0D2D1"></i>blush</div>
+      </div>
+    </section>
+    <section>
+      <h3>Derived neutrals · every value from a hue</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="ramp" title="cool ink — darkened teal 190°">
+          <i style="background:#0E191B;color:#fff"><span>0E191B</span></i>
+          <i style="background:#1A2A2E;color:#fff"><span>1A2A2E</span></i>
+          <i style="background:#3F555A;color:#fff"><span>3F555A</span></i>
+          <i style="background:#6F8A90;color:#fff"><span>6F8A90</span></i>
+        </div>
+        <div class="ramp" title="warm paper — lightened blush 6°">
+          <i style="background:#0E191B;color:#fff"><span>ink</span></i>
+          <i style="background:#6F8A90;color:#fff"><span>meta</span></i>
+          <i style="background:#E8DAD9;color:#3F555A"><span>E8DAD9</span></i>
+          <i style="background:#F4ECEB;color:#3F555A"><span>F4ECEB</span></i>
+          <i style="background:#FAF5F4;color:#3F555A"><span>FAF5F4</span></i>
+        </div>
+      </div>
+    </section>
+    <section class="type-spec">
+      <h3>Type</h3>
+      <b>Fraunces</b>
+      <small>Display · humanist serif, warmth <em>— headlines &amp; the script</em></small>
+      <b style="font-family:var(--sans);font-weight:600;font-size:19px;margin-top:8px">Hanken Grotesk</b>
+      <small>Body / UI · legible at small sizes <em>— everything working</em></small>
+    </section>
+  </div>
+</header>
+
+<div class="rail">
+
+  <!-- ============ A · INTAKE (conversational) ============ -->
+  <div class="stage">
+    <div class="cap"><b>A</b>Intake · conversational</div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:41</span><span class="dots"><i></i></span></div>
+      <div class="apphead">
+        <div class="steptrack" style="margin-left:0"><i class="now"></i><i></i><i></i></div>
+        <span class="stepno">Step 1 / 3</span>
+      </div>
+      <div class="fields">
+        <span class="field done"><span class="tick"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.3 5 8.6 9.5 3.5"/></svg></span>Product</span>
+        <span class="field done"><span class="tick"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.3 5 8.6 9.5 3.5"/></svg></span>Audience</span>
+        <span class="field wait"><span class="tick"></span>Tone</span>
+        <span class="field wait"><span class="tick"></span>Benefit</span>
+      </div>
+      <div class="body">
+        <div class="thread">
+          <div class="msg ai"><div class="who">VoiceMarketing</div>Tell me what you're selling — a sentence is plenty.</div>
+          <div class="msg me"><div class="who">You</div>A reusable beeswax food wrap, replaces plastic wrap, for eco-minded home cooks.</div>
+          <div class="msg ai"><div class="who">VoiceMarketing</div>Love it. What should the ad <em>feel</em> like — playful, calm, premium?</div>
+          <div class="thinking">
+            <div class="ribbon"><b style="animation-delay:0s"></b><b style="animation-delay:.12s"></b><b style="animation-delay:.24s"></b><b style="animation-delay:.36s"></b><b style="animation-delay:.48s"></b></div>
+            <span class="lab">listening</span>
+          </div>
+        </div>
+        <div class="inputbar">
+          <div class="box">Type your reply…</div>
+          <div class="send" aria-label="Send">
+            <b style="height:10px"></b><b style="height:18px"></b><b style="height:13px"></b><b style="height:20px"></b><b style="height:11px"></b>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">One question at a time. The four contract fields fill as chips (sage + check = captured). The “thinking” state is the waveform, not typing dots.</p>
+  </div>
+
+  <!-- ============ A' · FALLBACK FORM ============ -->
+  <div class="stage">
+    <div class="cap"><b>A′</b>Intake · form fallback</div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:43</span><span class="dots"><i></i></span></div>
+      <div class="apphead">
+        <div class="back"><svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3 5 7.5 9 12"/></svg></div>
+        <div class="steptrack"><i class="now"></i><i></i><i></i></div>
+        <span class="stepno">Step 1 / 3</span>
+      </div>
+      <div class="body">
+        <h2 class="s">Two quick details</h2>
+        <div class="formnote">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.4"/><path d="M8 5v3.6M8 11h.01"/></svg>
+          <p>We’ve chatted a few times — let’s just <b>fill the last fields directly</b>. Faster this way.</p>
+        </div>
+        <div class="flabel"><span class="dot"></span>Tone</div>
+        <div class="fin focus">Warm and reassuring<span style="float:right;color:var(--azure)">▍</span></div>
+        <div class="flabel"><span class="dot"></span>Key benefit</div>
+        <div class="fin ph">e.g. cuts single-use plastic at home</div>
+        <div style="margin-top:auto"></div>
+      </div>
+      <div class="cta">
+        <div class="btn">Generate copy
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 9h10M10 5l4 4-4 4"/></svg>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">After 5 rounds the same screen drops to a plain labeled form for what’s still missing — captured fields don’t reappear. Same tokens, no new UI language.</p>
+  </div>
+
+  <!-- ============ B · COPY READY ============ -->
+  <div class="stage">
+    <div class="cap"><b>B</b>Copy ready</div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:44</span><span class="dots"><i></i></span></div>
+      <div class="apphead">
+        <div class="back"><svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3 5 7.5 9 12"/></svg></div>
+        <div class="steptrack"><i class="on"></i><i class="now"></i><i></i></div>
+        <span class="stepno">Step 2 / 3</span>
+      </div>
+      <div class="body" style="overflow:hidden">
+        <h2 class="s">Here’s your script</h2>
+        <p class="lede">Read it out loud once — that’s exactly what your listener hears.</p>
+        <div class="scriptcard">
+          <span class="tag">Your <em>script</em></span>
+          <p class="script">Still wrapping leftovers in plastic? Meet the <span class="hl">beeswax wrap</span> that keeps food fresh and keeps waste out of the bin. Wash it, reuse it, love it — for a year.</p>
+          <div class="underrib" id="underrib"></div>
+        </div>
+        <div class="meta-row">
+          <div>Reading time<b>~14 sec</b></div>
+          <div>Tone<b>Warm</b></div>
+          <div>Words<b>38</b></div>
+        </div>
+        <div class="tips">
+          <div class="tip"><span class="b">1</span>The hook question is doing the work — keep it first.</div>
+          <div class="tip"><span class="b">2</span>Pick a warm voice next to match the copy.</div>
+        </div>
+      </div>
+      <div class="cta">
+        <div class="btn" style="margin-bottom:8px">Choose a voice
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 9h10M10 5l4 4-4 4"/></svg>
+        </div>
+        <div class="btn ghost">Edit the script</div>
+      </div>
+    </div></div>
+    <p class="note">Output framed as a <b>script to be read aloud</b>, not a text card — foreshadowing narration. One unmistakable primary action; editing is secondary.</p>
+  </div>
+
+  <!-- ============ C · VOICE + LENGTH ============ -->
+  <div class="stage">
+    <div class="cap"><b>C</b>Voice + length</div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:45</span><span class="dots"><i></i></span></div>
+      <div class="apphead">
+        <div class="back"><svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3 5 7.5 9 12"/></svg></div>
+        <div class="steptrack"><i class="on"></i><i class="on"></i><i class="now"></i></div>
+        <span class="stepno">Step 3 / 3</span>
+      </div>
+      <div class="body" style="overflow:hidden">
+        <h2 class="s">Pick a voice</h2>
+        <div class="vlist">
+          <div class="voice sel">
+            <div class="av" style="background:var(--blush)"></div>
+            <div class="txt"><b>Warm &amp; reassuring</b><small>Calm, trustworthy · matches your copy</small></div>
+            <div class="prev"><b style="height:6px"></b><b style="height:13px"></b><b style="height:9px"></b><b style="height:18px"></b><b style="height:11px"></b><b style="height:7px"></b></div>
+            <div class="radio"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M2.5 6.3 5 8.6 9.5 3.5"/></svg></div>
+          </div>
+          <div class="voice">
+            <div class="av" style="background:var(--azure-soft)"></div>
+            <div class="txt"><b>Energetic &amp; upbeat</b><small>Bright, fast, promotional</small></div>
+            <div class="prev"><b style="height:14px"></b><b style="height:8px"></b><b style="height:19px"></b><b style="height:10px"></b><b style="height:16px"></b><b style="height:7px"></b></div>
+            <div class="radio"></div>
+          </div>
+          <div class="voice">
+            <div class="av" style="background:var(--sage-soft)"></div>
+            <div class="txt"><b>Confident &amp; grounded</b><small>Measured, premium, low</small></div>
+            <div class="prev"><b style="height:9px"></b><b style="height:15px"></b><b style="height:7px"></b><b style="height:12px"></b><b style="height:9px"></b><b style="height:16px"></b></div>
+            <div class="radio"></div>
+          </div>
+        </div>
+        <div class="lenlabel">Length</div>
+        <div class="seg">
+          <div>15s<small>Punchy</small></div>
+          <div class="on">30s<small>Balanced</small></div>
+          <div>60s<small>Full story</small></div>
+        </div>
+      </div>
+      <div class="cta">
+        <div class="btn">Generate the ad
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 2v3M9 13v3M2 9h3M13 9h3M4 4l2 2M12 12l2 2M14 4l-2 2M6 12l-2 2"/></svg>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">Voice and length live together (one step, per contract). Presets only — each carries a tiny waveform preview. Status never rides on color alone: selection = ring + fill + check.</p>
+  </div>
+
+  <!-- ============ LOADING · transition to studio ============ -->
+  <div class="stage">
+    <div class="cap"><b>·</b>Generating · the transition</div>
+    <div class="phone"><div class="screen dark">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:45</span><span class="dots"><i></i></span></div>
+      <div class="gen">
+        <div class="bigrib">
+          <b style="animation-delay:0s"></b><b style="animation-delay:.1s"></b><b style="animation-delay:.2s"></b><b style="animation-delay:.3s"></b><b style="animation-delay:.4s"></b><b style="animation-delay:.5s"></b><b style="animation-delay:.6s"></b>
+        </div>
+        <h3>Recording your ad</h3>
+        <p>Warm &amp; reassuring · 30 seconds. A few seconds — hold tight.</p>
+        <div class="steps">
+          <div class="gstep done"><span class="b"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M2.5 6.3 5 8.6 9.5 3.5"/></svg></span>Script locked</div>
+          <div class="gstep now"><span class="b"><i></i></span>Synthesizing voice</div>
+          <div class="gstep"><span class="b"></span>Mixing audio</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">The real gap in the flow. The paper canvas <b>dims into the dark studio</b> and the ribbon contracts to a pulse — this is the one orchestrated transition, straight into playback.</p>
+  </div>
+
+  <!-- ============ D · PLAYBACK ============ -->
+  <div class="stage">
+    <div class="cap"><b>D</b>Playback · the payoff</div>
+    <div class="phone"><div class="screen dark">
+      <div class="notch"></div>
+      <div class="topbar"><span>9:45</span><span class="dots"><i></i></span></div>
+      <div class="pb">
+        <div class="ey">Your ad is ready</div>
+        <h2>Beeswax wrap</h2>
+        <div class="by">Warm &amp; reassuring · 30s · MP3</div>
+        <div class="wavewrap">
+          <div class="wave" id="wave"></div>
+          <div class="wtime"><span class="cur">0:11</span><span>0:30</span></div>
+        </div>
+        <div class="transport">
+          <div class="tbtn"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 7 8 13l7 6M20 7v12"/></svg></div>
+          <div class="play"><svg viewBox="0 0 28 28" fill="currentColor"><path d="M9 6v16M20 6v16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></div>
+          <div class="tbtn"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 7l7 6-7 6M6 7v12"/></svg></div>
+        </div>
+        <div class="srcbox">
+          <div class="h"><span class="d"></span>Source script</div>
+          <p>Still wrapping leftovers in plastic? Meet the beeswax wrap that keeps food fresh and keeps waste out of the bin…</p>
+        </div>
+      </div>
+      <div class="dl">
+        <div class="dlbtn main"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 3v9M5 8l4 4 4-4M3 15h12"/></svg>Download MP3</div>
+        <div class="dlbtn sec"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 9a3 3 0 0 1 3-3h1M12 9a3 3 0 0 1-3 3H8M7 9h4"/></svg></div>
+      </div>
+    </div></div>
+    <p class="note">Lights down, listen. The waveform is an <b>honest speech envelope</b> — syllable clusters and breath gaps — split at the playhead (azure = played). Source script stays visible; download is the hero.</p>
+  </div>
+
+</div>
+
+<footer class="foot">
+  <b>Signature element:</b> the amplitude ribbon — “thinking” indicator, script underline, voice-card preview, and the playback hero are one motif. &nbsp;·&nbsp;
+  <b>Deliberate risks:</b> warm-paper default over dark-mode-default (dark spent only on the payoff); a serif (Fraunces) on a speed utility; no bottom nav — this is a linear wizard, not a dashboard. &nbsp;·&nbsp;
+  Reduced-motion honored; focus rings visible; status pairs color with icon + label.
+</footer>
+
+<script>
+  // Honest speech-envelope waveform: syllable clusters + breath gaps, split at playhead.
+  (function(){
+    var wave = document.getElementById('wave');
+    if(!wave) return;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // amplitude pattern (0..1) shaped like speech: bursts of words, short dips = gaps
+    var env = [];
+    var words = [4,5,3,6,2,5,4,3,6,5,4,2,5,3,4,6,3,5,4,3,5,2,4,6,3,4]; // syllables per chunk
+    for(var w=0; w<words.length; w++){
+      var n = words[w];
+      for(var i=0;i<n;i++){
+        var body = 0.35 + 0.6*Math.sin((i+1)/(n+1)*Math.PI); // rise/fall within a word
+        env.push(body * (0.7+0.3*Math.random()));
+      }
+      env.push(0.06); env.push(0.05); // breath gap between words
+    }
+    var total = env.length;
+    var played = Math.floor(total*0.37); // 0:11 of 0:30
+    env.forEach(function(v,idx){
+      var b = document.createElement('b');
+      var h = Math.max(3, Math.round(v*72));
+      b.style.height = h+'px';
+      b.style.background = idx<played ? 'var(--azure)' : '#3A5A60';
+      if(idx===played){ b.style.background='var(--paper-0)'; b.style.width='3px'; } // playhead
+      wave.appendChild(b);
+    });
+  })();
+  // script underline ribbon (static, echoes the motif)
+  (function(){
+    var u = document.getElementById('underrib');
+    if(!u) return;
+    var hs=[5,9,6,12,7,4,10,6,8,5,11,7,4,9,6,8,5,7,10,6,4,8,6,9,5,7,4,8,6,5,9,6,7,4,8,5,6,9,5,7];
+    hs.forEach(function(h){var b=document.createElement('b');b.style.height=h+'px';u.appendChild(b);});
+  })();
+</script>
+</body>
+</html>
